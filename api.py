@@ -1,7 +1,8 @@
 import requests
 import csv
 from datetime import date
-def open_meteo_api_to_csv(api_url, csv_file):
+def open_meteo_api_to_csv(api_url : str ,
+                          csv_file: str):
     response = requests.get(api_url)
     data = response.json()
 
@@ -9,7 +10,7 @@ def open_meteo_api_to_csv(api_url, csv_file):
     times = data['hourly']['time']
 
     # Membuat dictionary untuk atribut lainnya
-    attributes = {}
+    attributes: dict = {}
     for attribute in data['hourly']:
         if attribute != 'time':
             attributes[attribute] = data['hourly'][attribute]
