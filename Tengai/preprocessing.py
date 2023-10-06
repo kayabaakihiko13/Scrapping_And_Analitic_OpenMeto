@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+
 from typing import Union
 def detect_outlier(data:Union[pd.Series,np.array],
                    see_value:bool=None) -> np.array:
@@ -34,3 +35,4 @@ def detect_outlier(data:Union[pd.Series,np.array],
 if __name__ == "__main__":
     series_outliers = detect_outlier(pd.Series([100, 2, 300]))
     print("Outliers in Series:", series_outliers)
+
