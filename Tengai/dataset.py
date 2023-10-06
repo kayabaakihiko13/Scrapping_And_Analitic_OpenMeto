@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import date
 def AirQuality(lat:float,long:float):
     api_url = f"https://air-quality-api.open-meteo.com/v1/air-quality?latitude={str(lat)}&longitude={str(long)}"
-    api_url += f"&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,aerosol_optical_depth,dust,ammonia"
+    api_url += f"&hourly=pm10,pm2_5,carbon_monoxide,nitrogen_dioxide,ozone,aerosol_optical_depth,dust"
     api_url += f"&start_date=2023-01-01&end_date={date.today()}"
     # how to get respon api in form json file
     respon = requests.get(api_url)
@@ -13,6 +13,8 @@ def AirQuality(lat:float,long:float):
         memo[feature] = data["hourly"][feature]
     # change datatype memo from dict to Dataframe
     result = pd.DataFrame(memo)
+    # change datatype "time" from object to datetime
+    result["time"] = pd.to_datetime(result["time"])
     return result
 
 
@@ -27,6 +29,8 @@ def Weather(lat:float,long:float):
     for feat in data["hourly"]:
         memo[feat] = data["hourly"][feat]
     result = pd.DataFrame(memo)
+    # change "time" datatype from object to datetime
+    result["time"] = pd.to_datetime(result["time"])
     return result
 
 def ClimateChange(lat:float,long:float):
@@ -40,6 +44,8 @@ def ClimateChange(lat:float,long:float):
         memo[feat] = data["daily"][feat]
     # change from dict to DataFrame
     result = pd.DataFrame(memo)
+    # change "time" feature from objec to datetime
+    result["time"] = pd.to_datetime(result["time"])
     return result
 
 
