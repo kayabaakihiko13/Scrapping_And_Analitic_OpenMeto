@@ -2,50 +2,71 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from typing import Any
+from typing import Any,Union
 
-def lineplot_features(data:pd.DataFrame) -> Any:
+def lineplot_features(data:Union[pd.Series,pd.DataFrame],size:tuple[int]=(12,6),
+                      title:str=None) -> Any:
     """
-    this function for visual line from data
+    this function for visual line one line feature
     Args:
-        data (pd.DataFrame): _description_
+        data (pd.Series): input data
     """
-    n_col = len(data.columns)
-    n_row = min(data.shape[1],1)
-    
-    fig, ax = plt.subplots(n_row,n_col,figsize=(12,6))
-    
-    for i,feat in enumerate(data.columns):
-        sns.lineplot(data[feat],ax=ax[i])
-        ax[i].set_xlabel(f"{feat}")
-    plt.suptitle("Line Plot feature dataFrames")
-
+    if isinstance(data,pd.Series):
+        title = f"{data.name}" if title is None else title
+        # setting size plot
+        _ = plt.figure(figsize=size)
+        sns.lineplot(data=data,label=f"line of {data.name}")
+        plt.title(title)
+        plt.legend(loc="lower right")
+        plt.show()
+    if isinstance(data,pd.DataFrame):
+        if data.shape[1] >1:
+            title = f"{data.columns[0]}" if title is None else title
+            # setting size plot
+            n_col = len(data.columns)
+            n_row = min(data.shape[1],1)
+            
+            _, ax = plt.subplots(n_row,n_col,figsize=size)
+            
+            for i,feat in enumerate(data.columns):
+                sns.lineplot(data[feat],ax=ax[i])
+                ax[i].set_xlabel(f"{feat}")
+            plt.suptitle("Line Plot feature dataFrames")
+            plt.show()
+        else:
+            data = pd.Series(data=data.values[:, 0],
+                             name=data.columns[0])
+            lineplot_features(data)
 
 def lineplot_resample_feature(data: pd.DataFrame, on_feat: str, rule: str) -> None:
     # Resample data
     resample_data = data.resample(rule, on=on_feat).sum()
-
+    if resample_data.shape[1] > 1:
     # Calculate the number of features
-    n_features = len(data.columns) - 1  # Subtract 1 for 'on_feat'
-    n_col = min(n_features, 2)
-    n_row = n_features // (n_col)
+        n_features = len(data.columns) - 1  # Subtract 1 for 'on_feat'
+        n_col = min(n_features, 2)
+        n_row = n_features // (n_col)
 
-    # Setting up the figure for plotting
-    fig, ax = plt.subplots(n_row + 1, n_col, figsize=(15, 6))
+        # Setting up the figure for plotting
+        fig, ax = plt.subplots(n_row + 1, n_col, figsize=(15, 6))
 
-    for i, feat in enumerate(data.columns.drop(on_feat)):
-        sns.lineplot(x=resample_data.index, y=resample_data[feat], ax=ax[i // 2, i % 2])
-        ax[i // 2, i % 2].set_xlabel(on_feat)
-        ax[i // 2, i % 2].set_ylabel(f"{feat}")
+        for i, feat in enumerate(data.columns.drop(on_feat)):
+            sns.lineplot(x=resample_data.index, y=resample_data[feat], ax=ax[i // 2, i % 2])
+            ax[i // 2, i % 2].set_xlabel(on_feat)
+            ax[i // 2, i % 2].set_ylabel(f"{feat}")
 
-    # deactivate plot no useage
-    for i in range(n_features, (n_row + 1) * n_col):
-        fig.delaxes(ax[i // n_col, i % n_col])
+        # deactivate plot no useage
+        for i in range(n_features, (n_row + 1) * n_col):
+            fig.delaxes(ax[i // n_col, i % n_col])
 
-    # Adjust the layout and title
-    plt.tight_layout()
-    plt.suptitle("Line Plot Resampled Dataframes", fontsize=15)
-    plt.show()
+        # Adjust the layout and title
+        plt.tight_layout()
+        plt.suptitle("Line Plot Resampled Dataframes", fontsize=15)
+        plt.show()
+    else:
+        resample_data = pd.Series(data=resample_data.values[:, 0], name=resample_data.columns[0])
+        lineplot_features(resample_data)
+        
     
 
 def avarange_genarating_barplot(data:pd.DataFrame,on_feat:str):
