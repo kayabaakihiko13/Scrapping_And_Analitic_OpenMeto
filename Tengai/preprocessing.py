@@ -109,4 +109,7 @@ def clustering_data(data: pd.DataFrame,
         plt.legend()
         plt.show()
 
+def adding(a:int|float,b:int|float):
+    
+    return a + b
 
