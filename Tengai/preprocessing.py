@@ -55,7 +55,7 @@ def undersampling_data(data:pd.DataFrame,ratio:float=.5)-> pd.DataFrame:
 def clustering_DataFrame(data:pd.DataFrame,name_time_feature:str,
                          rule:str="D")->pd.DataFrame:
     """_summary_
-
+    this function about how to result dataframe ready to clustering
     Args:
         data (pd.DataFrame): _description_
         name_time_feature (str): _description_
