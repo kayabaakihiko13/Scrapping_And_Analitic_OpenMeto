@@ -154,7 +154,7 @@ def plot_rolling_statistics(df: pd.DataFrame, rolling_window:int=7)->Any:
     # Show the plot
     plt.show()
     
-def visualize_adfuller_results(data: pd.DataFrame, feature: Union[str, List[str]], title: str) -> None:
+def visualize_adfuller_results(data: pd.DataFrame, feature: Union[str, list[str]], title: str) -> None:
     if isinstance(feature, str):
         result = adfuller(data[feature].values)
         feature_name = feature  # Store the feature name for the title
