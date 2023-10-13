@@ -75,26 +75,50 @@ def clustering_data(data: pd.DataFrame,
                     scaling_method: str = "Standard",
                     clustering_method: str = "KMeans",
                     random_state: int = 42,
-                    show_optimal: bool = True) -> Any:
+                    k_neighbors: int | None = 5,
+                    show_optimal: bool | None = None) -> Any:
+    """Perform clustering on the given data.
+
+    Args:
+        data (pd.DataFrame): The input data for clustering.
+        scaling_method (str, optional): The scaling method to use. Defaults to "Standard".
+        clustering_method (str, optional): The clustering algorithm to use. Defaults to "KMeans".
+        random_state (int, optional): Random seed for reproducibility. Defaults to 42.
+        k_neighbors (int | None, optional): The number of neighbors for KMeans. Defaults to None.
+        show_optimal (bool | None, optional): Whether to show the optimal number of clusters. Defaults to None.
+
+    Returns:
+        Any: The clustering results.
+    """
+    show_optimal = False if show_optimal is None else show_optimal
 
     if scaling_method.lower() == "standard":
         scaling_model = StandardScaler()
+    else:
+        # Handle other scaling methods if needed
+        scaling_model = None  # Add the appropriate scaler here
 
     if clustering_method.lower() == "kmeans":
-        clustering_model = KMeans(random_state=random_state)
-    # Add more clustering methods as needed
+        clustering_model = KMeans(n_clusters=k_neighbors, random_state=random_state)
+    else:
+        # Handle other clustering methods if needed
+        clustering_model = None  # Add the appropriate clustering model here
 
-    # Apply scaling and clustering in a pipeline
-    pipeline = make_pipeline(scaling_model, clustering_model)
-    labels = pipeline.fit_predict(data)
+    # Fit the pipeline
+    if scaling_model is not None and clustering_model is not None:
+        pipeline = make_pipeline(scaling_model, clustering_model)
+        pipeline.fit(data)
+    else:
+        raise ValueError("Unsupported scaling or clustering method")
 
     if show_optimal and clustering_method.lower() == "kmeans":
         inertia = []
         # Try different values of k from 1 to 10
         for k in range(1, 11):
-            kmeans = KMeans(n_clusters=k, random_state=random_state)
-            kmeans.fit(data)
-            inertia.append(kmeans.inertia_)
+            pipeline = make_pipeline(scaling_model, KMeans(n_clusters=k, random_state=random_state,
+                                                           max_iter=5_000))
+            pipeline.fit(data)
+            inertia.append(pipeline.named_steps['kmeans'].inertia_)
 
         # Identify the elbow point
         diff_inertia = [inertia[i] - inertia[i - 1] for i in range(1, len(inertia))]
@@ -109,4 +133,67 @@ def clustering_data(data: pd.DataFrame,
         plt.legend()
         plt.show()
 
+    return pipeline
 
+
+def detect_outlier_zscore(data: Union[np.ndarray, pd.Series, pd.DataFrame], threshold: int = 3, change_outlier: bool = None) -> Union[np.array, pd.Series, pd.DataFrame]:
+    """
+    Detect and potentially modify outliers in data using Z-scores.
+
+    Args:
+        data (Union[np.ndarray, pd.Series, pd.DataFrame]): Input data.
+        threshold (int, optional): Z-score threshold for outlier detection. Defaults to 3.
+        change_outlier (bool, optional): If True, replace outliers with the median of the data. Defaults to None.
+
+    Returns:
+        Union[np.array, pd.Series, pd.DataFrame]: Data with outliers or modified outliers.
+    """
+    if change_outlier is None:
+        change_outlier = False
+
+    if isinstance(data, (pd.Series, np.ndarray)):
+        if isinstance(data, pd.Series):
+            # Convert to NumPy array
+            data = data.values  
+
+        mean_val = np.mean(data)
+        std_val = np.std(data)
+        z_score = np.abs((data - mean_val) / std_val)
+        outliers = np.where(z_score>threshold)
+        
+        if change_outlier:
+            # Create a copy of the data to avoid modifying the original
+            new_data = data.copy()
+            # Replace outliers with the median value
+            median_val = np.median(data)
+            new_data[outliers] = median_val
+            return new_data
+        else:
+            # If not changing outliers, return the indices of outliers
+            return outliers
+    if isinstance(data, pd.DataFrame):
+        new_data = data.copy()  # Create a copy of the DataFrame to avoid modifying the original
+
+    if isinstance(data, pd.DataFrame):
+        new_data = data.copy()  # Create a copy of the DataFrame to avoid modifying the original
+
+        for col in data.columns:
+            mean_val = np.mean(data[col])
+            std_val = np.std(data[col])
+            z_score = np.abs((data[col] - mean_val) / std_val)
+            outliers = np.where(z_score > threshold)
+
+            if change_outlier:
+                # Replace outliers with the median value for this column
+                median_val = np.median(data[col])
+                new_data.loc[outliers, col] = median_val
+            else:
+                # If not changing outliers, mark the outliers with NaN values
+                new_data.loc[outliers, col] = np.nan
+
+        return new_data
+
+if __name__ =="__main__":
+    data = pd.DataFrame({'A': [1, 2, 3, 1000, 5], 'B': [10, 20, 30, 400, 50]})
+    result = detect_outlier_zscore(data, threshold=2)
+    print(result)
