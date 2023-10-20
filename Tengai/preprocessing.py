@@ -187,10 +187,6 @@ def detect_outlier_zscore(data: Union[np.ndarray, pd.Series, pd.DataFrame], thre
                 # Replace outliers with the median value for this column
                 median_val = np.median(data[col])
                 new_data.loc[outliers, col] = median_val
-            else:
-                # If not changing outliers, mark the outliers with NaN values
-                new_data.loc[outliers, col] = np.nan
-
         return new_data
 
 if __name__ =="__main__":
