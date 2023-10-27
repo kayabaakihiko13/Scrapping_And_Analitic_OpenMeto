@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller
+from statsmodels.graphics.tsaplots import plot_acf
 import numpy as np
 from typing import Any,Union
 
@@ -186,3 +187,31 @@ def visualize_adfuller(data: pd.DataFrame, result: tuple[np.number], title: str,
     plt.title(f'{feature_name}\nADF Statistic {adf_stat:0.3f}, p-value: {p_val}\nCritical Values 1%: {crit_val_1:0.3f}, 5%: {crit_val_5:0.3f}, 10%: {crit_val_10:0.3f}', fontsize=14)
     plt.ylabel(ylabel=title, fontsize=14)
     plt.show()  # Show the plot
+
+def plotting_different(data:Union[pd.DataFrame,pd.Series],size:tuple[int,int]=(12,6),
+                       title:str=None):
+    if isinstance(data, pd.DataFrame):
+        num_cols = data.shape[1]
+    elif isinstance(data, pd.Series):
+        num_cols = 1
+    
+    if title == None:
+        title = ""
+
+    fig,ax = plt.subplots(data.shape[1],2,figsize=size)
+    # this for describe title
+    fig.suptitle(title,size=16)
+    if isinstance(data, pd.DataFrame):
+        for idx,col in enumerate(data):
+            ax[idx, 0].plot(data.iloc[:,idx])
+            ax[idx,0].set_title(f"Origional of {col}")
+            plot_acf(data.iloc[:,idx],ax=ax[idx,1])
+    
+    if isinstance(data,pd.Series):
+        ax[0,0].plot(data)
+        ax[0,0].set_title(f"Origional of {data.name}")
+        plot_acf(data, ax=ax[0, 1])     
+    
+    plt.tight_layout()  # Ensure proper spacing
+    plt.show()
+        

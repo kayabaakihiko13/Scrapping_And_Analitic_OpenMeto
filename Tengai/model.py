@@ -3,11 +3,8 @@ import pandas as pd
 from typing import Union,Tuple
 from collections import Counter
 from sklearn.cluster import DBSCAN,KMeans
-from statsmodels.tsa.api import VAR
-from statsmodels.tsa.stattools import adfuller
-from statsmodels.tools.eval_measures import rmse, aic
 from statsmodels.tsa.stattools import grangercausalitytests
-
+import statsmodels.api as sm
 def dbscan_grid_search(X_data: Union[pd.DataFrame, np.ndarray],
                        eps_space: np.array = np.arange(0.1, 5, 0.1),
                        min_samples_space: np.array = np.arange(1, 50, 1),
@@ -117,3 +114,94 @@ def grangers_causation_matrix(data: pd.DataFrame, variables: list, maxlag=7, tes
     df.columns = [var + '_x' for var in variables]
     df.index = [var + '_y' for var in variables]
     return df
+
+def custom_train_test_split(data: Union[pd.DataFrame, pd.Series], 
+                            train_size: float = None, test_size: float = None) -> (np.ndarray, np.ndarray):
+    """_summary_
+
+    Args:
+        np (_type_): _description_
+        data (_type_, optional): _description_. Defaults to None, test_size: float = None)->(np.ndarray.
+
+    Raises:
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+        ValueError: _description_
+
+    Returns:
+        _type_: _description_
+
+    ## Example
+    >>> data=pd.Series([1,2,3,10,4,5],name="data")
+    >>> train,test = custom_train_test_split(data,0.6)
+    >>> print(train.shape,test.shape)
+    (3, 1) (2, 1)
+    >>> print(data.shape)
+    (6,)
+    """
+    
+    if train_size is None:
+        train_size = 1 - test_size
+    elif test_size is None:
+        test_size = 1 - train_size
+    else:
+        raise ValueError("Perhatikan nilai nya")
+
+    if not isinstance(data, (pd.DataFrame, pd.Series)):
+        raise ValueError("data should be a pandas DataFrame or Series.")
+    
+    if train_size < 0 or test_size < 0:
+        raise ValueError("Train size and test size must be non-negative.")
+    
+    if train_size + test_size != 1.0:
+        raise ValueError("The sum of train_size and test_size must be 1.0.")
+
+    data_length = len(data)
+    train_length = int(data_length * train_size)
+    test_length = int(data_length * test_size)
+    
+    if isinstance(data, pd.Series):
+        data = data.to_frame()  # Convert Series to DataFrame for slicing
+    
+    train_data = data.iloc[:train_length].values.reshape(-1,1)
+    test_data = data.iloc[train_length:train_length + test_length].values.reshape(-1,1)
+    
+    return train_data, test_data
+
+class ARITMA:
+    def __init__(self, p_value, q_value, d_value):
+        self.p_value = p_value
+        self.q_value = q_value
+        self.d_value = d_value
+        self.model = None
+
+    def fit_arima_model(self, data):
+        """
+        Membuat dan melatih model ARIMA.
+
+        Parameters:
+        - data: Seri waktu yang akan dianalisis
+
+        Returns:
+        - results: Hasil model ARIMA yang telah dilatih
+        """
+        self.model = sm.tsa.ARIMA(data, order=(self.p_value, self.d_value, self.q_value))
+        results = self.model.fit()
+        return results
+
+    def forecast_arima_model(self, steps):
+        """
+        Melakukan prediksi menggunakan model ARIMA.
+
+        Parameters:
+        - steps: Jumlah langkah ke depan yang akan diprediksi
+
+        Returns:
+        - forecast: Hasil prediksi
+        """
+        if self.model is None:
+            raise ValueError("Model ARIMA has not been fitted. Please fit the model first.")
+        forecast = self.model.get_forecast(steps=steps)
+        forecast_mean = forecast.predicted_mean
+        return forecast_mean
