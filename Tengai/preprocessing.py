@@ -1,11 +1,11 @@
 import numpy as np
 import pandas as pd
 from typing import Any,Union
-from sklearn.preprocessing import StandardScaler,MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-from sklearn.cluster import KMeans,HDBSCAN
+from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
-
+import statsmodels.api as sm
 
 def detect_outlier(data:Union[pd.Series,np.array],
                    see_value:bool=None) -> np.array:
@@ -188,6 +188,64 @@ def detect_outlier_zscore(data: Union[np.ndarray, pd.Series, pd.DataFrame], thre
                 median_val = np.median(data[col])
                 new_data.loc[outliers, col] = median_val
         return new_data
+
+def detect_pdq_different(data:pd.Series,
+                         alpha:float=.05)->dict[str,np.number]:
+    """_summary_
+
+    Args:
+        data (pd.Series): _description_
+        alpha (float, optional): _description_. Defaults to .05.
+
+    Returns:
+        dict[str,np.number]: _description_
+    """
+    # for find p and q
+    data_diff = data.copy()
+    data_diff = data_diff.diff().dropna()
+    best_aic = np.inf
+    best_bic = np.inf
+    best_p = 0
+    best_q = 0
+
+    # Define a range for p and q
+    p_range = range(0, 4)  # Example range for p
+    q_range = range(0, 4)  # Example range for q
+
+    for p in p_range:
+        for q in q_range:
+            model = sm.tsa.ARIMA(data_diff, order=(p, 1, q))
+            results = model.fit()
+            aic = results.aic
+            bic = results.bic
+
+            if aic < best_aic and bic < best_bic:
+                best_aic = aic
+                best_bic = bic
+                best_p = p
+                best_q = q
+
+    # to find value of d
+    d = 0
+    while True:
+        # Uji stasioneritas menggunakan ADF
+        result = sm.tsa.adfuller(data_diff)
+        
+        # Ambil nilai p-value dari hasil uji ADF
+        p_value = result[1]
+        
+        # Cek apakah data sudah stasioner
+        if p_value < alpha:
+            break  # Keluar dari loop jika data sudah stasioner
+        
+        # Tambahkan 1 ke d
+        d += 1
+    return {
+    "Best AIC": best_aic,
+    "Best BIC": best_bic,
+    "Best p": best_p,
+    "Best q": best_q,
+    "Best d": d}
 
 if __name__ =="__main__":
     data = pd.DataFrame({'A': [1, 2, 3, 1000, 5], 'B': [10, 20, 30, 400, 50]})
