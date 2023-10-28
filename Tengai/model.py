@@ -180,42 +180,16 @@ class ARITMA:
         self.model = None
 
     def fit_arima_model(self, data):
-        """
-        Membuat dan melatih model ARIMA.
-
-        Parameters:
-        - data: Seri waktu yang akan dianalisis
-
-        Returns:
-        - results: Hasil model ARIMA yang telah dilatih
-        """
         self.model = sm.tsa.ARIMA(data, order=(self.p_value, self.d_value, self.q_value))
         model_results = self.model.fit()
         return model_results
 
     def forecast_arima_model(self, model_results, steps):
-        """
-        Melakukan prediksi menggunakan model ARIMA.
+        forecast = model_results.forecast(steps=steps)
+        forecast_result = forecast.values
+        return forecast_result
 
-        Parameters:
-        - model_results: Hasil dari pemodelan ARIMA
-        - steps: Jumlah langkah ke depan yang akan diprediksi
-
-        Returns:
-        - forecast: Hasil prediksi
-        """
-        forecast = model_results.get_forecast(steps=steps)
-        forecast_mean = forecast.predicted_mean
-        return forecast_mean
-
-    def plot_predict(self, model_results, steps):
-        """
-        Menampilkan plot hasil prediksi model ARIMA.
-
-        Parameters:
-        - model_results: Hasil dari pemodelan ARIMA
-        - steps: Jumlah langkah ke depan yang akan diprediksi
-        """
+    def plot_predict(self, model_results, actual_data, steps):
         forecast = model_results.get_forecast(steps=steps)
         forecast_mean = forecast.predicted_mean
         forecast_ci = forecast.conf_int()
@@ -223,42 +197,42 @@ class ARITMA:
         last_date = data_index[-1]
         forecast_index = pd.date_range(start=last_date, periods=steps, freq=data_index.freq)
         plt.figure(figsize=(10, 6))
-        plt.plot(forecast_index, forecast_mean, label='Prediksi')
-        plt.fill_between(forecast_index, forecast_ci.iloc[:, 0], forecast_ci.iloc[:, 1], color='k', alpha=0.2, label='Interval Kepercayaan')
+        plt.plot(forecast_index, forecast_mean, label='Prediksi', color='blue')
+        plt.fill_between(forecast_index, forecast_ci.iloc[:, 0], forecast_ci.iloc[:, 1], color='blue', alpha=0.15, label='Interval Kepercayaan')
+        plt.plot(actual_data.index, actual_data.values, label='Actual', color='green')
         plt.legend()
         plt.xlabel('Indeks Waktu')
-        plt.ylabel('Nilai Prediksi')
-        plt.title('Plot Prediksi Model ARIMA')
+        plt.ylabel('Nilai Prediksi / Actual')
+        plt.title('Plot Prediksi Model ARIMA vs Actual')
         plt.show()
 
-    def accuracy_model(self, test_data)->dict[str,float]:
-        """
-        Menghitung Mean Absolute Error (MAE) sebagai metrik akurasi model.
-
-        Parameters:
-        - test_data: Data yang akan digunakan untuk menghitung akurasi
-
-        Returns:
-        - mae: Mean Absolute Error
-        """
+    def accuracy_model(self, test_data):
         if self.model is None:
             raise ValueError("ARIMA model has not been fitted. Please fit the model first.")
         model_results = self.model.fit()
         forecast_mean = self.forecast_arima_model(model_results, steps=len(test_data))
         mae = mean_absolute_error(test_data, forecast_mean)
-        mape = np.mean(np.abs(forecast_mean - test_data)/np.abs(test_data))
-        result = {"mae: ":mae,"mape":mape}
+        mape = np.mean(np.abs(forecast_mean - test_data) / np.abs(test_data))
+        result = {"mae": mae, "mape": mape}
         return result
 
 if __name__ =="__main__":
     import pandas as pd
     date_rng = pd.date_range(start='2023-01-01', end='2023-10-28', freq='D')
-    data_values = np.random.rand(len(date_rng))
-    time_series = pd.Series(data_values,index=date_rng,name="pm10")
-    train_size = int(len(time_series) * 0.7)
-    train_data, test_data = time_series.iloc[:train_size], time_series.iloc[train_size:]
-    model = ARITMA(1,1,1)
-    model_results = model.fit_arima_model(train_data)
-    mae = model.accuracy_model(test_data)
-    print(model_results.summary())
-    print(mae)
+    pm10_values = np.random.uniform(0, 30, size=len(date_rng))
+    data = pd.Series(pm10_values, index=date_rng)
+    train_size = int(len(data) * 0.7)
+    train_data, test_data = data.iloc[:train_size], data.iloc[train_size:]
+    # Fit an ARIMA model to your data
+    p_value = 2
+    q_value = 2
+    d_value = 0
+    model =ARITMA(p_value, d_value, q_value)
+    model_result = model.fit_arima_model(data)
+    model.plot_predict(model_result, test_data, steps=3)
+    accuracy = model.accuracy_model(test_data)
+    print(len(test_data))
+    print("Mean Absolute Error (MAE):", accuracy["mae"])
+    print("Mean Absolute Percentage Error (MAPE):", accuracy["mape"])
+    
+    
