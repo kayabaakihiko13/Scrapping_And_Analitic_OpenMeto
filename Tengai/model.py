@@ -5,6 +5,9 @@ from collections import Counter
 from sklearn.cluster import DBSCAN,KMeans
 from statsmodels.tsa.stattools import grangercausalitytests
 import statsmodels.api as sm
+import matplotlib.pyplot as plt
+from sklearn.metrics import mean_absolute_error
+
 def dbscan_grid_search(X_data: Union[pd.DataFrame, np.ndarray],
                        eps_space: np.array = np.arange(0.1, 5, 0.1),
                        min_samples_space: np.array = np.arange(1, 50, 1),
@@ -187,21 +190,75 @@ class ARITMA:
         - results: Hasil model ARIMA yang telah dilatih
         """
         self.model = sm.tsa.ARIMA(data, order=(self.p_value, self.d_value, self.q_value))
-        results = self.model.fit()
-        return results
+        model_results = self.model.fit()
+        return model_results
 
-    def forecast_arima_model(self, steps):
+    def forecast_arima_model(self, model_results, steps):
         """
         Melakukan prediksi menggunakan model ARIMA.
 
         Parameters:
+        - model_results: Hasil dari pemodelan ARIMA
         - steps: Jumlah langkah ke depan yang akan diprediksi
 
         Returns:
         - forecast: Hasil prediksi
         """
-        if self.model is None:
-            raise ValueError("Model ARIMA has not been fitted. Please fit the model first.")
-        forecast = self.model.get_forecast(steps=steps)
+        forecast = model_results.get_forecast(steps=steps)
         forecast_mean = forecast.predicted_mean
         return forecast_mean
+
+    def plot_predict(self, model_results, steps):
+        """
+        Menampilkan plot hasil prediksi model ARIMA.
+
+        Parameters:
+        - model_results: Hasil dari pemodelan ARIMA
+        - steps: Jumlah langkah ke depan yang akan diprediksi
+        """
+        forecast = model_results.get_forecast(steps=steps)
+        forecast_mean = forecast.predicted_mean
+        forecast_ci = forecast.conf_int()
+        data_index = model_results.fittedvalues.index
+        last_date = data_index[-1]
+        forecast_index = pd.date_range(start=last_date, periods=steps, freq=data_index.freq)
+        plt.figure(figsize=(10, 6))
+        plt.plot(forecast_index, forecast_mean, label='Prediksi')
+        plt.fill_between(forecast_index, forecast_ci.iloc[:, 0], forecast_ci.iloc[:, 1], color='k', alpha=0.2, label='Interval Kepercayaan')
+        plt.legend()
+        plt.xlabel('Indeks Waktu')
+        plt.ylabel('Nilai Prediksi')
+        plt.title('Plot Prediksi Model ARIMA')
+        plt.show()
+
+    def accuracy_model(self, test_data)->dict[str,float]:
+        """
+        Menghitung Mean Absolute Error (MAE) sebagai metrik akurasi model.
+
+        Parameters:
+        - test_data: Data yang akan digunakan untuk menghitung akurasi
+
+        Returns:
+        - mae: Mean Absolute Error
+        """
+        if self.model is None:
+            raise ValueError("ARIMA model has not been fitted. Please fit the model first.")
+        model_results = self.model.fit()
+        forecast_mean = self.forecast_arima_model(model_results, steps=len(test_data))
+        mae = mean_absolute_error(test_data, forecast_mean)
+        mape = np.mean(np.abs(forecast_mean - test_data)/np.abs(test_data))
+        result = {"mae: ":mae,"mape":mape}
+        return result
+
+if __name__ =="__main__":
+    import pandas as pd
+    date_rng = pd.date_range(start='2023-01-01', end='2023-10-28', freq='D')
+    data_values = np.random.rand(len(date_rng))
+    time_series = pd.Series(data_values,index=date_rng,name="pm10")
+    train_size = int(len(time_series) * 0.7)
+    train_data, test_data = time_series.iloc[:train_size], time_series.iloc[train_size:]
+    model = ARITMA(1,1,1)
+    model_results = model.fit_arima_model(train_data)
+    mae = model.accuracy_model(test_data)
+    print(model_results.summary())
+    print(mae)
