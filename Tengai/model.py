@@ -119,21 +119,16 @@ def grangers_causation_matrix(data: pd.DataFrame, variables: list, maxlag=7, tes
     return df
 
 def custom_train_test_split(data: Union[pd.DataFrame, pd.Series], 
-                            train_size: float = None, test_size: float = None) -> (np.ndarray, np.ndarray):
+                            train_size: float = None, test_size: float = None) -> Tuple(np.ndarray, np.ndarray):
     """_summary_
-
+    this function how to spit data to porpuse data
     Args:
-        np (_type_): _description_
-        data (_type_, optional): _description_. Defaults to None, test_size: float = None)->(np.ndarray.
-
-    Raises:
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
-        ValueError: _description_
+       data (Union[pd.DataFrame, pd.Series]) = input data for to split
+        trainsize (float) = this for input size for size of train data
+        testsize (float) = this for input size for size of test data
 
     Returns:
-        _type_: _description_
+        (np.ndarray, np.ndarray): _description_
 
     ## Example
     >>> data=pd.Series([1,2,3,10,4,5],name="data")
@@ -173,23 +168,23 @@ def custom_train_test_split(data: Union[pd.DataFrame, pd.Series],
     return train_data, test_data
 
 class ARITMA:
-    def __init__(self, p_value, q_value, d_value):
+    def __init__(self, p_value:int, q_value:int, d_value:int):
         self.p_value = p_value
         self.q_value = q_value
         self.d_value = d_value
         self.model = None
 
-    def fit_arima_model(self, data):
+    def fit_arima_model(self, data:pd.DataFrame):
         self.model = sm.tsa.ARIMA(data, order=(self.p_value, self.d_value, self.q_value))
         model_results = self.model.fit()
         return model_results
 
-    def forecast_arima_model(self, model_results, steps):
+    def forecast_arima_model(self, model_results, steps:int):
         forecast = model_results.forecast(steps=steps)
         forecast_result = forecast.values
         return forecast_result
 
-    def plot_predict(self, model_results, actual_data, steps):
+    def plot_predict(self, model_results, actual_data, steps:int):
         forecast = model_results.get_forecast(steps=steps)
         forecast_mean = forecast.predicted_mean
         forecast_ci = forecast.conf_int()
@@ -203,7 +198,7 @@ class ARITMA:
         plt.legend()
         plt.xlabel('Indeks Waktu')
         plt.ylabel('Nilai Prediksi / Actual')
-        plt.title('Plot Prediksi Model ARIMA vs Actual')
+        plt.title(f'Plot Prediksi Model ARIMA vs Actual feature {actual_data.name}')
         plt.show()
 
     def accuracy_model(self, test_data):
@@ -219,9 +214,9 @@ class ARITMA:
 if __name__ =="__main__":
     import pandas as pd
     date_rng = pd.date_range(start='2023-01-01', end='2023-10-28', freq='D')
-    pm10_values = np.random.uniform(0, 30, size=len(date_rng))
+    pm10_values = np.random.uniform(0, 60, size=len(date_rng))
     data = pd.Series(pm10_values, index=date_rng)
-    train_size = int(len(data) * 0.7)
+    train_size = int(len(data) * 0.8)
     train_data, test_data = data.iloc[:train_size], data.iloc[train_size:]
     # Fit an ARIMA model to your data
     p_value = 2

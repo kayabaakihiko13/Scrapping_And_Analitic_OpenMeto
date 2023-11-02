@@ -70,70 +70,30 @@ def clustering_DataFrame(data:pd.DataFrame,name_time_feature:str,
     
     return data.resample(rule).mean()
 
-
-def clustering_data(data: pd.DataFrame,
-                    scaling_method: str = "Standard",
-                    clustering_method: str = "KMeans",
-                    random_state: int = 42,
-                    k_neighbors: int | None = 5,
-                    show_optimal: bool | None = None) -> Any:
-    """Perform clustering on the given data.
-
-    Args:
-        data (pd.DataFrame): The input data for clustering.
-        scaling_method (str, optional): The scaling method to use. Defaults to "Standard".
-        clustering_method (str, optional): The clustering algorithm to use. Defaults to "KMeans".
-        random_state (int, optional): Random seed for reproducibility. Defaults to 42.
-        k_neighbors (int | None, optional): The number of neighbors for KMeans. Defaults to None.
-        show_optimal (bool | None, optional): Whether to show the optimal number of clusters. Defaults to None.
-
-    Returns:
-        Any: The clustering results.
+def Clustering_Optimalization(data:pd.DataFrame,
+                              range_iterable:range,random_state:int=0):
     """
-    show_optimal = False if show_optimal is None else show_optimal
-
-    if scaling_method.lower() == "standard":
-        scaling_model = StandardScaler()
-    else:
-        # Handle other scaling methods if needed
-        scaling_model = None  # Add the appropriate scaler here
-
-    if clustering_method.lower() == "kmeans":
-        clustering_model = KMeans(n_clusters=k_neighbors, random_state=random_state)
-    else:
-        # Handle other clustering methods if needed
-        clustering_model = None  # Add the appropriate clustering model here
-
-    # Fit the pipeline
-    if scaling_model is not None and clustering_model is not None:
-        pipeline = make_pipeline(scaling_model, clustering_model)
+    this code deteck how many cluster group in data
+    Args:
+        data (pd.DataFrame): input data
+        range_iterable (range): range of input value
+        random_state (int, optional): this just lock data. Defaults to 0.
+    """
+    inertia = []
+    for k in range_iterable:
+        pipeline = make_pipeline(StandardScaler(),KMeans(n_clusters=k,random_state=random_state))
+        # training model pipeline
         pipeline.fit(data)
-    else:
-        raise ValueError("Unsupported scaling or clustering method")
-
-    if show_optimal and clustering_method.lower() == "kmeans":
-        inertia = []
-        # Try different values of k from 1 to 10
-        for k in range(1, 11):
-            pipeline = make_pipeline(scaling_model, KMeans(n_clusters=k, random_state=random_state,
-                                                           max_iter=5_000))
-            pipeline.fit(data)
-            inertia.append(pipeline.named_steps['kmeans'].inertia_)
-
-        # Identify the elbow point
-        diff_inertia = [inertia[i] - inertia[i - 1] for i in range(1, len(inertia))]
-        elbow_index = diff_inertia.index(max(diff_inertia)) + 1
-
-        # Plot the elbow graph
-        plt.figure(figsize=(8, 6))
-        plt.plot(range(1, 11), inertia, marker='o', linestyle='--')
-        plt.xlabel('Number of clusters (k)')
-        plt.ylabel('Inertia')
-        plt.title('Elbow Method for Optimal k')
-        plt.legend()
-        plt.show()
-
-    return pipeline
+        inertia.append(pipeline.named_steps['kmeans'].inertia_)
+    # Plot the elbow graph
+    diff_inertia = [inertia[i] - inertia[i - 1] for i in range(1, len(inertia))]
+    plt.figure(figsize=(8, 6))
+    plt.plot(range(1, 11), inertia, marker='o', linestyle='--')
+    plt.xlabel('Number of clusters (k)')
+    plt.ylabel('Inertia')
+    plt.title('Elbow Method for Optimal k')
+    plt.legend()
+    plt.show()
 
 
 def detect_outlier_zscore(data: Union[np.ndarray, pd.Series, pd.DataFrame], threshold: int = 3, change_outlier: bool = None) -> Union[np.array, pd.Series, pd.DataFrame]:
@@ -212,18 +172,17 @@ def detect_pdq_different(data:pd.Series,
     p_range = range(0, 4)  # Example range for p
     q_range = range(0, 4)  # Example range for q
 
-    for p in p_range:
-        for q in q_range:
-            model = sm.tsa.ARIMA(data_diff, order=(p, 1, q))
-            results = model.fit()
-            aic = results.aic
-            bic = results.bic
+    for p,q in zip(p_range,q_range):
+        model = sm.tsa.ARIMA(data_diff, order=(p, 1, q))
+        results = model.fit()
+        aic = results.aic
+        bic = results.bic
 
-            if aic < best_aic and bic < best_bic:
-                best_aic = aic
-                best_bic = bic
-                best_p = p
-                best_q = q
+        if aic < best_aic and bic < best_bic:
+            best_aic = aic
+            best_bic = bic
+            best_p = p
+            best_q = q
 
     # to find value of d
     d = 0
