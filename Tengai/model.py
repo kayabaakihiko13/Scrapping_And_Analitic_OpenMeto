@@ -119,7 +119,7 @@ def grangers_causation_matrix(data: pd.DataFrame, variables: list, maxlag=7, tes
     return df
 
 def custom_train_test_split(data: Union[pd.DataFrame, pd.Series], 
-                            train_size: float = None, test_size: float = None) -> Tuple(np.ndarray, np.ndarray):
+                            train_size: float = None, test_size: float = None) :
     """_summary_
     this function how to spit data to porpuse data
     Args:
