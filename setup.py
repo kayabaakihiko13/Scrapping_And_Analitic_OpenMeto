@@ -8,7 +8,7 @@ setup(
     version="0.0.1",
     description="Just Ordinary Pakages",
     author="Iqbal Ramadhan Anniswa",
-    packages=["Tengai"],
+    packages=["Tengai","Tengai_demo"],
     python_requires=">=3.7",
     install_requires=requirements
 )
