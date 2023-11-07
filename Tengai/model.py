@@ -152,6 +152,7 @@ def custom_train_test_split(data: Union[pd.DataFrame, pd.Series],
                             train_size: float = None, test_size: float = None):
     """
     ## Describe
+
     this function how to spit data to porpuse data
     Args:
        data (Union[pd.DataFrame, pd.Series]) = input data for to split
@@ -265,4 +266,3 @@ class ARITMA:
         mape = np.mean(np.abs(forecast_mean - test_data) / np.abs(test_data))
         result = {"mae": mae, "mape": mape}
         return result
-    
