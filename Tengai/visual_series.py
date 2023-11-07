@@ -1,10 +1,12 @@
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 import seaborn as sns
 import pandas as pd
 from statsmodels.tsa.stattools import adfuller
 from statsmodels.graphics.tsaplots import plot_acf
 import numpy as np
 from typing import Any,Union
+sns.set_style("whitegrid")
 
 def lineplot_features(data:Union[pd.Series,pd.DataFrame],
                       size:tuple[int]=(12,6),title:str=None) -> Any:
@@ -80,7 +82,8 @@ def lineplot_resample_feature(data: pd.DataFrame, on_feat: str, rule: str) -> No
       
 
 
-def average_generating_barplot(data: pd.DataFrame, on_feat: str, size: tuple[int] = (30, 27)):
+def average_generating_barplot(data: pd.DataFrame, on_feat: str,
+                               size: tuple[int, int] = (30, 27)):
     """
     Generate a bar plot of the mean values of numeric features grouped by the hour component of on_feat.
     Highlight the bar with the maximum value in red.
@@ -152,7 +155,7 @@ def plot_rolling_statistics(df: pd.DataFrame, rolling_window:int=7)->Any:
         ax[i].set_ylabel('Drainage Volume')
         ax[i].legend()
 
-    # Show the plot
+    
     plt.show()
     
 def visualize_adfuller_results(data: pd.DataFrame, feature: Union[str, list[str]], title: str) -> None:
@@ -214,4 +217,3 @@ def plotting_different(data:Union[pd.DataFrame,pd.Series],size:tuple[int,int]=(1
     
     plt.tight_layout()  # Ensure proper spacing
     plt.show()
-        
