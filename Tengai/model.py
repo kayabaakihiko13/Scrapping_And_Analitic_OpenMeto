@@ -5,25 +5,36 @@ from collections import Counter
 from sklearn.cluster import DBSCAN,KMeans
 from statsmodels.tsa.stattools import grangercausalitytests
 import statsmodels.api as sm
+from statsmodels.tsa.arima_model import ARMAResults
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_error
+import plotly.express as px
+import plotly.graph_objects as go
+
+
 
 def dbscan_grid_search(X_data: Union[pd.DataFrame, np.ndarray],
                        eps_space: np.array = np.arange(0.1, 5, 0.1),
                        min_samples_space: np.array = np.arange(1, 50, 1),
                        min_clust: int = 3,
                        max_clust: int = 6)->Tuple:
-    """_summary_
+    """
+    ## Describe
 
+    this function for know search k-group cluster DB model
     Args:
-        X_data (Union[pd.DataFrame, np.ndarray]): _description_
-        eps_space (np.array, optional): _description_. Defaults to np.arange(0.1, 5, 0.1).
-        min_samples_space (np.array, optional): _description_. Defaults to np.arange(1, 50, 1).
-        min_clust (int, optional): _description_. Defaults to 3.
-        max_clust (int, optional): _description_. Defaults to 6.
+        X_data (Union[pd.DataFrame, np.ndarray]): this parameter for input data
+        eps_space (np.array, optional): this for radius of neighborhood.
+                                        Defaults to np.arange(0.1, 5, 0.1).
+        min_samples_space (np.array, optional): this for minimal sampling data.
+                                                Defaults to np.arange(1, 50, 1).
+        min_clust (int, optional): this parameter for know minimal clustering.
+                                   Defaults to 3.
+        max_clust (int, optional): this parameter for know maximal clustering.
+                                   Defaults to 6.
 
     Returns:
-        _type_: _description_
+        Tuple: result is Tuple form
     """
     n_iterations = 0
     dbscan_clusters = []  # List to store the results
@@ -58,8 +69,26 @@ def dbscan_grid_search(X_data: Union[pd.DataFrame, np.ndarray],
 
 
 def kmean_grid_search(data: pd.DataFrame, k_values: range, init="k-means++", n_init="warn",
-                      max_iter=300, tol=0.0001, verbose=0,
-                      random_state=None, copy_x=True):
+                      max_iter:int=300, tol:float=0.0001, verbose:int=0,
+                      random_state:int|None=None, copy_x:bool=True):
+    """_summary_
+
+    Args:
+        data (pd.DataFrame): input data Frame
+        k_values (range): this parameter range test k-group
+        init (str, optional): this parameter choice for optimalization.
+                              Defaults to "k-means++".
+        n_init (str, optional): this parameter choice for optimalization.. Defaults to "warn".
+        max_iter (int, optional): this paramter for setting iterable. Defaults to 300.
+        tol (float, optional): this parameter for tol. Defaults to 0.0001.
+        verbose (int, optional): this code for . Defaults to 0.
+        random_state (int, optional): this parameter for settings lock for split data.
+                                      Defaults to None.
+        copy_x (bool, optional): just copy data to saving. Defaults to True.
+
+    Returns:
+        int: count k-group
+    """
     # inertia value
     inertia_values = []  # Within-cluster sum of squares (inertia)
     best_k = None
@@ -88,7 +117,8 @@ def kmean_grid_search(data: pd.DataFrame, k_values: range, init="k-means++", n_i
     return best_k
 
 # Model Time Series
-def grangers_causation_matrix(data: pd.DataFrame, variables: list, maxlag=7, test='ssr_chi2test', verbose=False):    
+def grangers_causation_matrix(data: pd.DataFrame, variables: list,
+                              maxlag:int=7, test:str='ssr_chi2test', verbose:bool=False):    
     """
     ## Describes
 
@@ -119,8 +149,10 @@ def grangers_causation_matrix(data: pd.DataFrame, variables: list, maxlag=7, tes
     return df
 
 def custom_train_test_split(data: Union[pd.DataFrame, pd.Series], 
-                            train_size: float = None, test_size: float = None) :
-    """_summary_
+                            train_size: float = None, test_size: float = None):
+    """
+    ## Describe
+
     this function how to spit data to porpuse data
     Args:
        data (Union[pd.DataFrame, pd.Series]) = input data for to split
@@ -128,7 +160,7 @@ def custom_train_test_split(data: Union[pd.DataFrame, pd.Series],
         testsize (float) = this for input size for size of test data
 
     Returns:
-        (np.ndarray, np.ndarray): _description_
+        (np.ndarray, np.ndarray): result about spliting data
 
     ## Example
     >>> data=pd.Series([1,2,3,10,4,5],name="data")
@@ -168,7 +200,10 @@ def custom_train_test_split(data: Union[pd.DataFrame, pd.Series],
     return train_data, test_data
 
 class ARITMA:
-    def __init__(self, p_value:int, q_value:int, d_value:int):
+    """
+    this class for modeling data
+    """
+    def __init__(self, p_value:int, q_value:int, d_value:int)-> None:
         self.p_value = p_value
         self.q_value = q_value
         self.d_value = d_value
@@ -179,29 +214,50 @@ class ARITMA:
         model_results = self.model.fit()
         return model_results
 
-    def forecast_arima_model(self, model_results, steps:int):
+    def forecast_arima_model(self, model_results:ARMAResults,
+                             steps:int=3):
         forecast = model_results.forecast(steps=steps)
         forecast_result = forecast.values
         return forecast_result
 
-    def plot_predict(self, model_results, actual_data, steps:int):
+    def plot_predict(self, model_results:ARMAResults,
+                     actual_data:np.ndarray, steps: int = 3):
+        
         forecast = model_results.get_forecast(steps=steps)
         forecast_mean = forecast.predicted_mean
         forecast_ci = forecast.conf_int()
         data_index = model_results.fittedvalues.index
         last_date = data_index[-1]
         forecast_index = pd.date_range(start=last_date, periods=steps, freq=data_index.freq)
-        plt.figure(figsize=(10, 6))
-        plt.plot(forecast_index, forecast_mean, label='Prediksi', color='blue')
-        plt.fill_between(forecast_index, forecast_ci.iloc[:, 0], forecast_ci.iloc[:, 1], color='blue', alpha=0.15, label='Interval Kepercayaan')
-        plt.plot(actual_data.index, actual_data.values, label='Actual', color='green')
-        plt.legend()
-        plt.xlabel('Indeks Waktu')
-        plt.ylabel('Nilai Prediksi / Actual')
-        plt.title(f'Plot Prediksi Model ARIMA vs Actual feature {actual_data.name}')
-        plt.show()
 
-    def accuracy_model(self, test_data):
+        fig = px.line(x=forecast_index, y=forecast_mean,
+                      labels={'x': "Indeks Waktu", 'y': "Nilai Prediksi"},
+                      title=f"Plot Prediksi Model ARIMA vs Actual feature {actual_data.name}")
+        
+        fig.add_trace(
+            go.Scatter(x=forecast_index, y=forecast_ci.iloc[:, 0],fill="tozeroy", 
+                       fillcolor="rgba(0,0,255,0.15)", line=dict(width=0),
+                       name="Interval Kepercayaan")
+        )
+        fig.add_trace(
+            go.Scatter(x=forecast_index, y=forecast_ci.iloc[:, 1], fill="tonexty",
+                       fillcolor="rgba(0,0,255,0.15)", line=dict(width=0))
+        )
+        
+        fig.add_trace(
+            go.Scatter(x=actual_data.index, y=actual_data.values,
+                       line=dict(color="green", width=2), name="Actual")
+        )
+
+        fig.update_layout(
+            xaxis_title='Indeks Waktu',
+            yaxis_title='Nilai Prediksi / Actual',
+            legend=dict(orientation='h', yanchor='bottom', xanchor='center', x=0.5)
+        )
+
+        fig.show()
+
+    def accuracy_model(self, test_data:np.ndarray)->dict[str,float]:
         if self.model is None:
             raise ValueError("ARIMA model has not been fitted. Please fit the model first.")
         model_results = self.model.fit()
@@ -210,24 +266,3 @@ class ARITMA:
         mape = np.mean(np.abs(forecast_mean - test_data) / np.abs(test_data))
         result = {"mae": mae, "mape": mape}
         return result
-
-if __name__ =="__main__":
-    import pandas as pd
-    date_rng = pd.date_range(start='2023-01-01', end='2023-10-28', freq='D')
-    pm10_values = np.random.uniform(0, 60, size=len(date_rng))
-    data = pd.Series(pm10_values, index=date_rng)
-    train_size = int(len(data) * 0.8)
-    train_data, test_data = data.iloc[:train_size], data.iloc[train_size:]
-    # Fit an ARIMA model to your data
-    p_value = 2
-    q_value = 2
-    d_value = 0
-    model =ARITMA(p_value, d_value, q_value)
-    model_result = model.fit_arima_model(data)
-    model.plot_predict(model_result, test_data, steps=3)
-    accuracy = model.accuracy_model(test_data)
-    print(len(test_data))
-    print("Mean Absolute Error (MAE):", accuracy["mae"])
-    print("Mean Absolute Percentage Error (MAPE):", accuracy["mape"])
-    
-    
